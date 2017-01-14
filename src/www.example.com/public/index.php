@@ -55,7 +55,7 @@ $app->dependencies()
 
 $app->dependencies()
     ->bind('Nirvarnia\Contract\Translate')
-    ->to('Nirvarnia\Translate');
+    ->to('Nirvarnia\Translate\Main');
 
 //$app->dependencies()->logger = function ()
 //{
@@ -122,8 +122,7 @@ $app->route('GET /login')
     ->via('Website\Middleware\SomeMiddleware')
     ->to('Website\Controller\Auth->login');
 
-$app->route('*')
+$app->route(404)
     ->to('Website\Controller\NotFound->index');
 
 $app->start();
-exit;

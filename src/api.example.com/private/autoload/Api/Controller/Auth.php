@@ -3,10 +3,11 @@
 namespace App\Controller\Auth;
 
 use App\Model\User as Model;
+use App\View\Resource\Token;
 
 use Nirvarnia\Contract\Helper\Password;
-use Nirvarnia\Contract\Http\ServerSide\Request;
-use Nirvarnia\Contract\Http\ServerSide\Response;
+use Nirvarnia\Contract\Http\Message\Server\Request;
+use Nirvarnia\Contract\Http\Message\Server\Response;
 use Nirvarnia\Contract\Jwt\Encode as Jwt;
 use Nirvarnia\Contract\Translate;
 
@@ -54,7 +55,7 @@ final class Auth extends Controller
         $this->model
             ->connection()->close();
 
-        if ( ! $user || $user->password !== $this->password->hash($password')) {
+        if ( ! $user || $user->password !== $this->password->hash($password)) {
             $response->body()
                 ->notices()->add()
                 ->error($this->translate('error_codes.invalid_credentials'))
@@ -71,8 +72,9 @@ final class Auth extends Controller
             ->encode();
 
         $response->body()
-            ->successful()
-            ->resources()->add(new AuthToken($token));
+            ->success(true)
+            ->resource('token')
+                ->append(new Token($token));
 
         return $response;
     }
