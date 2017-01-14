@@ -1,0 +1,14 @@
+# Exclude temporary files and dependencies.
+
+/api
+/tmp
+/vendor
+
+# Exclude common system files.
+
+Thumbs.db
+.DS_Store
+.cvs
+.svn
+*.bak
+*.swp
