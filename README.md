@@ -1,5 +1,5 @@
 
-[![Nirvarnia](https://cdn.rawgit.com/nirvarnia/logo/v1.0.0/build/nirvarnia-logo.210x60.png)](https://www.nirvarnia.com/)
+# [![Nirvarnia](https://cdn.rawgit.com/nirvarnia/logo/v1.0.0/build/nirvarnia-logo.210x60.png)](https://www.nirvarnia.com/)
 
 A playground for designing Nirvarnia APIs through fantasy application code.
 
