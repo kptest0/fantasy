@@ -2,14 +2,13 @@
 
 namespace RestApi\Controller\Auth;
 
-use RestApi\Model\User as Model;
-use RestApi\View\Resource\Token;
-
-use Nirvarnia\Contract\Helper\Password;
-use Nirvarnia\Contract\Http\Message\Server\Request;
-use Nirvarnia\Contract\Http\Message\Server\Response;
-use Nirvarnia\Contract\Jwt\Encode as Jwt;
-use Nirvarnia\Contract\Translate;
+use Nirvarnia\Contract\Http\Message\Server\Response  as HttpResponse;
+use Nirvarnia\Contract\Http\Message\Server\Request   as HttpRequest;
+use Nirvarnia\Contract\Jwt\Encode                    as Jwt;
+use RestApi\Model\User                               as Model;
+use Nirvarnia\Contract\Helper\Password               as Password;
+use RestApi\View\Resource\Token                      as Token;
+use Nirvarnia\Contract\Translate                     as Translate;
 
 final class Login extends Controller
 {
@@ -19,9 +18,9 @@ final class Login extends Controller
     private $translate = null;
 
     public function __construct(
-    Jwt $jwt,
-    Model $model,
-    Password $password,
+    Jwt       $jwt,
+    Model     $model,
+    Password  $password,
     Translate $translate)
     {
         $this->jwt       = $jwt;
@@ -30,23 +29,47 @@ final class Login extends Controller
         $this->translate = $translate;
     }
 
-    public function index(Request $request, Response $response) : Response
+    public function index(HttpRequest $request, HttpResponse $response) : HttpResponse
     {
         $params = $this->extractParams($request);
         if ($params->empty()) {
-            return $this->makeResponse($response, 'Missing Parameters');
+            $response
+                ->status()
+                    ->code(400)->phrase('Bad Request');
+            $response
+                ->body()
+                    ->notices()
+                        ->add()->error('Missing Parameters');
+
+            return $response;
         }
 
         $user = $this->findUser($params);
-        if ( ! $user->valid()) {
-            return $this->makeResponse($response, 'Invalid Login');
-        }
-        if ( ! $this->password->check($params->get('password'), $user->get('password_hash'))) {
-            return $this->makeResponse($response, 'Invalid Login');
+        if ( ! $user || ! $this->password->check($params->get('password'), $user->get('password_hash'))) {
+            $response
+                ->status()
+                    ->code(200)->phrase('OK');
+            $response
+                ->body()
+                    ->notices()
+                        ->add()->error('Invalid Login')
+                           ->explanation($this->translate('message: invalid username or password'));
+
+            return $response;
         }
 
         $token = $this->makeToken($user);
-        return $this->makeResponse($response, 'OK', $token);
+
+        $response
+            ->status()
+                ->code(200)->phrase('OK');
+        $response
+            ->body()
+                ->success()
+                ->resource('tokens')
+                    ->add($token);
+
+        return $response;
     }
 
     private function extractParams(Request $request) : Parameters
@@ -65,52 +88,11 @@ final class Login extends Controller
     {
         $user = $this->model
                      ->where('username')->matches($params->get('username'))
-                     ->find();
+                     ->find()->first();
         $this->model
              ->connection()->close();
 
         return $user;
-    }
-
-    private function makeResponse(Response $response, string $description, Token $token = null)
-    {
-        if ($description === 'Missing Parameters') {
-            $response
-                ->status()
-                    ->code(400)->phrase('Bad Request');
-            $response
-                ->body()
-                    ->notices()
-                        ->add()->error('Missing Parameters');
-
-            return $response;
-        }
-
-        if ($description === 'Invalid Login') {
-            $response
-                ->status()
-                    ->code(200)->phrase('OK');
-            $response
-                ->body()
-                    ->notices()
-                        ->add()->error('Invalid Login')
-                           ->explanation($this->translate('message: invalid username or password'));
-
-            return $response;
-        }
-
-        if ($description === 'Token' && $token) {
-            $response
-                ->status()
-                    ->code(200)->phrase('OK');
-            $response
-                ->body()
-                    ->success()
-                    ->resource('tokens')
-                        ->add($token);
-        }
-
-        throw new BadArgument('Unrecognized $description: "%s"', $description);
     }
 
     private function makeToken(User $user) : Token
